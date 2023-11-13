@@ -157,6 +157,9 @@ def validate_mvsnet(mvs_list):
     if FLAGS.regularization == '3DCNNs':
         depth_map, prob_map = inference(
             images, cams, FLAGS.max_d, depth_start, depth_interval)
+        
+        
+
     elif FLAGS.regularization == 'GRU':
         depth_map, prob_map = inference_winner_take_all(images, cams, 
             depth_num, depth_start, depth_end, reg_type='GRU', inverse_depth=FLAGS.inverse_depth)
@@ -201,6 +204,14 @@ def validate_mvsnet(mvs_list):
             try:
                 out_loss, out_less_one, out_less_three, out_depth_map = sess.run([
                     loss, less_one_accuracy, less_three_accuracy, depth_map])
+
+                out_dmap_path = mvs_list[step][-1].replace("Depths", "MVSNetDepths")
+                out_dmap_dir = os.path.dirname(out_dmap_path)
+                from pathlib import Path
+                if not os.path.exists(out_dmap_dir):
+                    Path(out_dmap_dir).mkdir(parents=True)
+                write_pfm(out_dmap_path, out_depth_map[0])
+                # write_pfm(prob_map_path, out_prob_map)
             except tf.errors.OutOfRangeError:
                 print("all dense finished")  # ==> "End of dataset"
                 break
@@ -221,9 +232,9 @@ def validate_mvsnet(mvs_list):
         print ('ave_loss', ave_loss)
         print ('ave_per1', ave_per1)
         print ('ave_per3', ave_per3)
-        with open(FLAGS.validation_result_path, 'a') as log_file:
-            log_file.write('Model check point %d, L1 loss = %f, < 1 = %f, < 3 = %f \n' 
-                           % (int(FLAGS.ckpt_step), float(ave_loss), float(ave_per1), float(ave_per3)))
+        # with open(FLAGS.validation_result_path, 'a') as log_file:
+        #     log_file.write('Model check point %d, L1 loss = %f, < 1 = %f, < 3 = %f \n' 
+        #                    % (int(FLAGS.ckpt_step), float(ave_loss), float(ave_per1), float(ave_per3)))
 
 def main(argv=None):
     """ program entrance """
@@ -233,7 +244,7 @@ def main(argv=None):
     elif FLAGS.validate_set == 'eth3d':
         sample_list = gen_eth3d_path(FLAGS.eth3d_data_root, mode='validation')
     elif FLAGS.validate_set == 'dtu':
-        sample_list = gen_dtu_resized_path(FLAGS.dtu_data_root, mode='validation')
+        sample_list = gen_dtu_resized_path(FLAGS.dtu_data_root, mode='training')
 
     # inference
     validate_mvsnet(sample_list)
