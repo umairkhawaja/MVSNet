@@ -55,7 +55,7 @@ tf.app.flags.DEFINE_bool('adaptive_scaling', True,
 # network architecture
 tf.app.flags.DEFINE_string('regularization', 'GRU',
                            """Regularization method, including '3DCNNs' and 'GRU'""")
-tf.app.flags.DEFINE_boolean('refinement', True,
+tf.app.flags.DEFINE_boolean('refinement', False,
                            """Whether to apply depth map refinement for MVSNet""")
 tf.app.flags.DEFINE_bool('inverse_depth', True,
                            """Whether to apply inverse depth for R-MVSNet""")
@@ -81,10 +81,23 @@ class MVSGenerator:
                 selected_view_num = int(len(data) / 2)
 
                 for view in range(min(self.view_num, selected_view_num)):
-                    image_file = file_io.FileIO(data[2 * view], mode='r')
+                    path = data[2 * view]
+                    filename = path.split("/")[-1]
+                    number_part = filename.split(".")[0][-2:]  # Extract the numeric part
+                    formatted_number = "{:0>6}".format(number_part)
+                    if not os.path.exists(path):
+                        path = path.replace(filename, formatted_number + ".png")
+                        path = path.replace("images", "image")
+                        assert os.path.exists(path), "File {} does not exist in png/jpg".format(path)
+
+                    image_file = file_io.FileIO(path, mode='r')
                     image = scipy.misc.imread(image_file, mode='RGB')
                     image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
-                    cam_file = file_io.FileIO(data[2 * view + 1], mode='r')
+
+                    cam_path = data[2 * view + 1]
+                    cam_path = cam_path.replace("cams","cameras")
+                    # cam_path = os.path.join(cam_dir, formatted_number + "_cam.txt")
+                    cam_file = file_io.FileIO(cam_path, mode='r')
                     cam = load_cam(cam_file, FLAGS.interval_scale)
                     if cam[1][3][2] == 0:
                         cam[1][3][2] = FLAGS.max_d
@@ -93,10 +106,20 @@ class MVSGenerator:
 
                 if selected_view_num < self.view_num:
                     for view in range(selected_view_num, self.view_num):
-                        image_file = file_io.FileIO(data[0], mode='r')
+                        path = data[0]
+                        filename = path.split("/")[-1].split(".")[0]
+                        formatted_number = "{:0>6}".format(filename)
+                        view_dir = os.path.dirname(data[0])
+                        path = os.path.join(view_dir,formatted_number+".png")
+
+                        image_file = file_io.FileIO(path, mode='r')
                         image = scipy.misc.imread(image_file, mode='RGB')
                         image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
-                        cam_file = file_io.FileIO(data[1], mode='r')
+
+                        cam_path = data[1]
+                        cam_path = cam_path.replace("cams","cameras")
+                        # cam_path = os.path.join(cam_dir, formatted_number + "_cam.txt")
+                        cam_file = file_io.FileIO(cam_path, mode='r')
                         cam = load_cam(cam_file, FLAGS.interval_scale)
                         images.append(image)
                         cams.append(cam)
