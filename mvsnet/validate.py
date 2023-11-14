@@ -207,17 +207,17 @@ def validate_mvsnet(mvs_list):
                 out_loss, out_less_one, out_less_three, out_depth_map, out_prob_map = sess.run([
                     loss, less_one_accuracy, less_three_accuracy, depth_map, prob_map])
 
-                # out_dmap_path = mvs_list[step][-1].replace("Depths", "MVSNetPredDepths")
-                # out_dmap_dir = os.path.dirname(out_dmap_path)
+                out_dmap_path = mvs_list[step][-1].replace("Depths", "MVSNetDepths")
+                out_dmap_dir = os.path.dirname(out_dmap_path)
 
                 out_prob_path = mvs_list[step][-1].replace("Depths", "MVSNetProbs")
                 out_prob_dir = os.path.dirname(out_prob_path)
                 
                 from pathlib import Path
                 
-                # if not os.path.exists(out_dmap_dir):
-                #     Path(out_dmap_dir).mkdir(parents=True)
-                # write_pfm(out_dmap_path, depth_map[0])
+                if not os.path.exists(out_dmap_dir):
+                    Path(out_dmap_dir).mkdir(parents=True)
+                write_pfm(out_dmap_path, out_depth_map[0])
 
                 if not os.path.exists(out_prob_dir):
                     Path(out_prob_dir).mkdir(parents=True)
